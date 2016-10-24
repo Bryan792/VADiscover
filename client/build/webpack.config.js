@@ -57,6 +57,11 @@ webpackConfig.plugins = [
     minify   : {
       collapseWhitespace : true
     }
+  }),
+  new webpack.ProvidePlugin({
+    $: 'jquery',
+    jQuery: 'jquery',
+    'window.jQuery': 'jquery'
   })
 ]
 
