@@ -67,7 +67,6 @@ export function onIoConnect(io) {
 
 async function updateUser(username) {
   console.log("processing: " + username);
-  await new Promise(resolve => setTimeout(resolve, 10000));
   await getApiValue("animelist/" + username).then(async function(person) {
     var counter = {};
     var actors = {};
