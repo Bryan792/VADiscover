@@ -24,7 +24,7 @@ const app = module.exports = new Koa();
 
 const logger = Morgan('combined');
 
-const rout1 = require('./routes');
+import { router as rout1 } from './routes';
 
 app.use(adapt(favicon(require.resolve('./public/favicon.ico'))));
 app.use(adapt(require('koa-response-time')()));

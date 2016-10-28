@@ -3,14 +3,13 @@ console.log('Starting TLS server at ' + (new Date).toISOString());
 process.on('exit', function() {
     console.log('Process exit at ' + (new Date).toISOString());
 });
-require('babel-register');
-require('babel-polyfill');
 
 const Promise = require('bluebird');
 const sticky = require('socketio-sticky-session');
 const cluster = require('cluster');
 const pem = Promise.promisifyAll(require('pem'));
 const app = require('./app');
+import {onIoConnect} from './routes';
 const config = require('./config.json');
 const spdy = require('spdy');
 const socketIo = require('socket.io')
@@ -42,11 +41,9 @@ Promise.coroutine(function*() { // same as an async function; allows use of yiel
     };
     function getServer() {
         const server = spdy.createServer(credentials, app.callback());
-        const io = socketIo.listen(server);
+        const io = require('socket.io')(server);
 
-        io.on('connection', function(socket) {
-            // TODO: do stuff with socket
-        })
+        onIoConnect(io);
 
         return server;
     }

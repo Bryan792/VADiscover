@@ -1,4 +1,4 @@
-const router = require('koa-router')();
+export let router = require('koa-router')();
 const rp = require('request-promise-native');
 const Promise = require('bluebird');
 const _ = require('lodash');
@@ -8,6 +8,8 @@ const kue = require('kue');
 const db = new (cradle.Connection)().database('apijson');
 const responseDb = new (cradle.Connection)().database('responses');
 const queue = kue.createQueue();
+
+const Immutable = require('immutable');
 
 function initDb(database) {
   database.exists(createDbIfNeeded);
@@ -27,16 +29,45 @@ function initDb(database) {
 initDb(db);
 initDb(responseDb);
 
-queue.process("updateUser", (job, done) => {
-  updateUser(job.data.title)
-    .then(() => {
-      done();
-      console.log("job done: " + job.data.title);
+let list = Immutable.List();
+
+export function onIoConnect(io) {
+  io.on('connection', function(socket) {
+    socket.on('username', function(msg) {
+      socket.join(msg);
+      let index = list.indexOf(msg);
+      if (index > -1) {
+        socket.emit("message", "queueposition " + (index + 1) + " " + list.size);
+      }
+      /*
+      kue.Job.rangeByState('inactive', 0, -1, 'asc', function(err, jobs) {
+        console.log(jobs);
+      });
+      kue.Job.rangeByState('active', 0, -1, 'asc', function(err, jobs) {
+        console.log(jobs);
+      });
+      */
     });
-})
+  });
+
+  queue.process("updateUser", (job, done) => {
+    let username = job.data.title;
+    updateUser(username)
+      .then(() => {
+        done();
+        console.log("job done: " + username);
+        io.to(username).emit("message", "done");
+        list = list.delete(list.indexOf(username));
+        list.forEach((username, index) => {
+          io.to(username).emit("message", "queueposition " + (index + 1) + " " + list.size);
+        })
+      });
+  })
+}
 
 async function updateUser(username) {
   console.log("processing: " + username);
+  await new Promise(resolve => setTimeout(resolve, 10000));
   await getApiValue("animelist/" + username).then(async function(person) {
     var counter = {};
     var actors = {};
@@ -115,8 +146,11 @@ async function updateUser(username) {
     );
 
     console.log(username);
+    if (username === "unichanchan" || username === "yongming")
+      return;
     responseDb.save(username, {
-      response: response
+      response: response,
+      last_updated: Date.now(),
     }, (err, res) => {
       console.log(res)
     });
@@ -134,19 +168,23 @@ router.get('/mal/:id', async(ctx) => {
   };
 
   let username = ctx.params.id;
+      if (!list.contains(username)) {
+        console.log(username + " added to the queue");
+        queue.create("updateUser",
+          {
+            title: username
+          }).removeOnComplete(true).priority("high").save();
+        list = list.push(username);
+      }
 
   //If cached response
   await responseDb.getAsync(username)
     .then((doc) => {
       console.log("Returning cached response");
-      ctx.body = doc.response;
+      ctx.body = {...doc};
     })
     .catch((err) => {
       //NEW USER
-      queue.create("updateUser",
-        {
-          title: username
-        }).save();
 
       ctx.body = {
         last_updated: "never"
@@ -175,5 +213,3 @@ function getApiValue(apiPath) {
       });
   });
 }
-
-module.exports = router;
