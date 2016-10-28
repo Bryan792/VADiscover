@@ -19,6 +19,9 @@ const mapDispatchToProps = {
 const mapStateToProps = (state) => ({
   most : state.user.most,
   username : state.user.username,
+  isLoading : state.user.loading,
+  queuePosition : state.user.queuePosition,
+  queueSize : state.user.queueSize,
 })
 
 /*  Note: mapStateToProps is where you should use `reselect` to create selectors, ie:

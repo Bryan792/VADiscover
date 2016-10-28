@@ -11,7 +11,7 @@ export default class Mal extends Component {
     return (
       <div className="ui center aligned text container">
         <h1 className="ui header">VA Discover</h1>
-        <SearchBar />
+        <SearchBar history={this.props.history} />
       </div>
     )
   }
