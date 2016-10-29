@@ -183,20 +183,27 @@ router.get('/mal/:id', async(ctx) => {
     list = list.push(username);
   }
 
-  //If cached response
-  await responseDb.getAsync(username)
-    .then((doc) => {
-      console.log("Returning cached response");
-      ctx.body = {
-        ...doc
-      };
-    })
-    .catch((err) => {
-      //NEW USER
+  await getApiValue("profile/" + username)
+    .then(async (profile) => {
 
-      ctx.body = {
-        last_updated: "never"
-      }
+      //If cached response
+      await responseDb.getAsync(username)
+        .then((doc) => {
+          console.log("Returning cached response");
+          ctx.body = {
+            ...doc,
+            profile: profile,
+          };
+        })
+        .catch(async (err) => {
+          //NEW USER
+
+          ctx.body = {
+            last_updated: "never",
+            profile: profile,
+          }
+        });
+
     });
 })
 
