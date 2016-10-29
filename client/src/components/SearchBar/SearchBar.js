@@ -5,7 +5,7 @@ export default class SearchBar extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: ''
+      value: "" 
     };
     this.handleChange = this.handleChange.bind(this);
   }
@@ -23,6 +23,7 @@ export default class SearchBar extends Component {
                                                this.state.value.trim();
                                                if (!this.state.value) return;
                                                this.props.history.push('/' + this.state.value);
+                                               this.setState({value: ""});
                                              } }>
         <div className='field'>
           <input type="text" value={ this.state.value } onChange={ this.handleChange } placeholder="MAL Username" /> 
