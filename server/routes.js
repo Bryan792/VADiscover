@@ -103,7 +103,7 @@ async function updateUser(username) {
                         actors[actor.id].animeScore += anime.score;
                         actors[actor.id].animeCount++;
                       }
-                      actors[actor.id].character.push(_(character).omit("actors"));
+                      actors[actor.id].character.push(_(character).omit("actors").value());
                       let count = counter[actor.id];
                       if (count == null) {
                         counter[actor.id] = 1;
@@ -122,25 +122,23 @@ async function updateUser(username) {
           // API call failed... 
           });
         }));
-    var sorted = _(counter)
+    let sorted = _(counter)
       .pickBy((count) => {
         return count > 1;
       })
       .toPairs()
-      .sortBy((pair) => {
-        return pair[1];
-      })
+      .sortBy([(pair) => {
+        //TODO:Second sort by anime count, then by score
+        return _(actors[pair[0]].character).uniqBy("id").value().length;
+      }])
       .reverse()
-      .forEach((value, key, map) => {
-        //console.log(key + " " + value);
-      })
 
     let response = await Promise.all(
       _(sorted)
         .slice(0, 5)
         .map((value) => {
           let actorInfo = actors[value[0]];
-          let characters = _(actorInfo.character).map((character) => character.value()).uniqBy("id");
+          let characters = _(actorInfo.character).uniqBy("id");
           return getApiValue("people/" + actors[value[0]].actor.id)
             .then((person) => {
               return {
@@ -157,7 +155,7 @@ async function updateUser(username) {
     );
 
     console.log(username);
-    if (username === "unichanchan" || username === "yongming")
+    if (username === "unichanchan")
       return;
     responseDb.save(username, {
       response: response,
