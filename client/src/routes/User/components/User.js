@@ -44,8 +44,7 @@ export default class User extends Component {
                                                  <div className="content">
                                                    <div className="header"> { actor.actor.name } </div>
                                                    <div className="meta">
-                                                      <span>{actor.count}</span>
-                                                      <span>Your avg core: 8</span>
+                                                     Seen in <span style={{fontWeight: 'bold'}}>{actor.count}</span> shows{actor.average_score > 0 ? <span> with an average score of <span style={{fontWeight: 'bold'}}>{ actor.average_score }</span></span> : null}
                                                     </div>
                                                  <div className="ui fluid ten column doubling grid">
                                                    { actor.character.map(character => <div className="column" key={ character.id }>
