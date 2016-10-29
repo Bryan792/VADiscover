@@ -173,11 +173,6 @@ async function updateUser(username) {
 }
 
 router.get('/mal/:id', async(ctx) => {
-  var options = {
-    uri: 'http://localhost:9001/2.1/animelist/bryan792',
-    json: true // Automatically parses the JSON string in the response 
-  };
-
   let username = ctx.params.id;
   if (!list.contains(username)) {
     console.log(username + " added to the queue");
