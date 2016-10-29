@@ -39,14 +39,14 @@ export function onIoConnect(io) {
       if (index > -1) {
         socket.emit("message", "queueposition " + (index + 1) + " " + list.size);
       }
-      /*
-      kue.Job.rangeByState('inactive', 0, -1, 'asc', function(err, jobs) {
-        console.log(jobs);
-      });
-      kue.Job.rangeByState('active', 0, -1, 'asc', function(err, jobs) {
-        console.log(jobs);
-      });
-      */
+    /*
+    kue.Job.rangeByState('inactive', 0, -1, 'asc', function(err, jobs) {
+      console.log(jobs);
+    });
+    kue.Job.rangeByState('active', 0, -1, 'asc', function(err, jobs) {
+      console.log(jobs);
+    });
+    */
     });
   });
 
@@ -70,48 +70,58 @@ async function updateUser(username) {
   await getApiValue("animelist/" + username).then(async function(person) {
     var counter = {};
     var actors = {};
-    await Promise.all(person.anime.map(async(anime) => {
-      var addMe = anime.title + "\n";
-      await getApiValue("anime/cast/" + anime.id).then((cast) => {
-        addMe += "actors\n";
-        _(cast.Characters)
-          .filter({
-            "role": "Main"
-          })
-          .map((character) => {
-            return {
-              name: character.name,
-              actors: _(character.actors)
-                .filter({
-                  language: "Japanese"
-                })
-                .map((actor) => {
-                  if (!actors[actor.id]) {
-                    actors[actor.id] = {
-                      actor: actor,
-                      character: [_(character).omit("actors")]
-                    };
-                  } else {
-                    actors[actor.id].character.push(_(character).omit("actors"));
-                  }
-                  let count = counter[actor.id];
-                  if (count == null) {
-                    counter[actor.id] = 1;
-                  } else {
-                    counter[actor.id] = ++count;
-                  }
-                  return actor;
-                })
-            };
-          })
-          .each((character) => {
-            addMe += JSON.stringify(character) + "\n"
+    await Promise.all(
+      _(person.anime)
+        .filter((anime) => {
+          return anime.watched_status === "completed" || anime.watched_status === "watching";
+        })
+        .map(async(anime) => {
+          var addMe = anime.title + "\n";
+          await getApiValue("anime/cast/" + anime.id).then((cast) => {
+            addMe += "actors\n";
+            _(cast.Characters)
+              .filter({
+                "role": "Main"
+              })
+              .map((character) => {
+                return {
+                  name: character.name,
+                  actors: _(character.actors)
+                    .filter({
+                      language: "Japanese"
+                    })
+                    .map((actor) => {
+                      if (!actors[actor.id]) {
+                        actors[actor.id] = {
+                          actor: actor,
+                          animeScore: 0,
+                          animeCount: 0,
+                          character: [],
+                        };
+                      }
+                      if (anime.score > 0) {
+                        actors[actor.id].animeScore += anime.score;
+                        actors[actor.id].animeCount++;
+                      }
+                      actors[actor.id].character.push(_(character).omit("actors"));
+                      let count = counter[actor.id];
+                      if (count == null) {
+                        counter[actor.id] = 1;
+                      } else {
+                        counter[actor.id] = ++count;
+                      }
+                      return actor;
+                    })
+                };
+              })
+              .each((character) => {
+                addMe += JSON.stringify(character) + "\n"
+              });
+          }).catch(function(err) {
+            console.log(err);
+          // API call failed... 
           });
-      }).catch(function(err) {
-        console.log(err);
-      // API call failed... 
-      });
-    }));
+        }));
     var sorted = _(counter)
       .pickBy((count) => {
         return count > 1;
@@ -129,7 +139,8 @@ async function updateUser(username) {
       _(sorted)
         .slice(0, 5)
         .map((value) => {
-          let characters = _(actors[value[0]].character).map((character) => character.value()).uniqBy("id");
+          let actorInfo = actors[value[0]];
+          let characters = _(actorInfo.character).map((character) => character.value()).uniqBy("id");
           return getApiValue("people/" + actors[value[0]].actor.id)
             .then((person) => {
               return {
@@ -139,6 +150,7 @@ async function updateUser(username) {
                 },
                 character: characters,
                 count: value[1],
+                average_score: actorInfo.animeCount > 0 ? (actorInfo.animeScore * 1.0 / actorInfo.animeCount).toFixed(2) : 0,
               }
             })
         })
@@ -167,20 +179,22 @@ router.get('/mal/:id', async(ctx) => {
   };
 
   let username = ctx.params.id;
-      if (!list.contains(username)) {
-        console.log(username + " added to the queue");
-        queue.create("updateUser",
-          {
-            title: username
-          }).removeOnComplete(true).priority("high").save();
-        list = list.push(username);
-      }
+  if (!list.contains(username)) {
+    console.log(username + " added to the queue");
+    queue.create("updateUser",
+      {
+        title: username
+      }).removeOnComplete(true).priority("high").save();
+    list = list.push(username);
+  }
 
   //If cached response
   await responseDb.getAsync(username)
     .then((doc) => {
       console.log("Returning cached response");
-      ctx.body = {...doc};
+      ctx.body = {
+        ...doc
+      };
     })
     .catch((err) => {
       //NEW USER
