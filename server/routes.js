@@ -171,7 +171,7 @@ async function updateUser(username) {
 }
 
 router.get('/mal/:id', async(ctx) => {
-  let username = ctx.params.id;
+  let username = ctx.params.id.toLowerCase();
   if (!list.contains(username)) {
     console.log(username + " added to the queue");
     queue.create("updateUser",
