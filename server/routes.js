@@ -123,8 +123,8 @@ async function updateUser(username) {
           });
         }));
     let sorted = _(counter)
-      .pickBy((count) => {
-        return count > 1;
+      .pickBy((count, actorId) => {
+        return _(actors[actorId].character).uniqBy("id").value().length > 1;
       })
       .toPairs()
       .sortBy([(pair) => {
