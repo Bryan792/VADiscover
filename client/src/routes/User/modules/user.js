@@ -4,6 +4,7 @@ import io from 'socket.io-client'
 // Constants
 // ------------------------------------
 export const REQUEST_VA = 'REQUEST_VA'
+export const RECEIVE_PROFILE = 'RECEIVE_PROFILE'
 export const RECEIVE_VA = 'RECEIVE_VA'
 export const QUEUE_UPDATE = 'QUEUE_UPDATE'
 
@@ -22,12 +23,17 @@ export const requestVa = (username) => {
       type: REQUEST_VA,
       username: username,
     });
+
     (function getDataR(username, dispatch, getState) {
     fetch('https://yura.bryanching.net:8443/mal/' + username)
       .then(data => data.json())
       .then(text => {
         //TODO: short circuit cancel here only works cause end of chain
         if (username != getState().user.username) return; 
+        dispatch({
+          type: RECEIVE_PROFILE,
+          profile: text.profile,
+        });
         if (text.last_updated === "never") {
           //new user
           socket = io("https://yura.bryanching.net:8443");
@@ -73,9 +79,13 @@ export const actions = {
 // ------------------------------------
 const ACTION_HANDLERS = {
   [REQUEST_VA]: (state, action) => ({
-    ...initialState, 
+    ...initialState,
     username: action.username,
     loading: true,
+  }),
+  [RECEIVE_PROFILE]: (state, action) => ({
+    ...state,
+    profile: action.profile,
   }),
   [RECEIVE_VA]: (state, action) => {
     return ({
@@ -101,6 +111,7 @@ const initialState = {
   loading: true,
   queuePosition: -1,
   queueSize: -1,
+  profile: {},
 };
 export default function reducer(state = initialState, action) {
   const handler = ACTION_HANDLERS[action.type]

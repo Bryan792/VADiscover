@@ -22,6 +22,7 @@ const mapStateToProps = (state) => ({
   isLoading : state.user.loading,
   queuePosition : state.user.queuePosition,
   queueSize : state.user.queueSize,
+  profile: state.user.profile,
 })
 
 /*  Note: mapStateToProps is where you should use `reselect` to create selectors, ie:
