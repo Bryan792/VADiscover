@@ -18,6 +18,7 @@ const mapDispatchToProps = {
 
 const mapStateToProps = (state) => ({
   most : state.user.most,
+  recommendations : state.user.recommendations,
   username : state.user.username,
   isLoading : state.user.loading,
   queuePosition : state.user.queuePosition,

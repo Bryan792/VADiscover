@@ -62,7 +62,7 @@ export const requestVa = (username) => {
         } else {
           dispatch({
             type: RECEIVE_VA,
-            payload: text,
+            response: text.response,
           })
         }
       });
@@ -90,7 +90,8 @@ const ACTION_HANDLERS = {
   [RECEIVE_VA]: (state, action) => {
     return ({
       ...state,
-      most: action.payload.response,
+      most: action.response.voice_actors,
+      recommendations: action.response.recommendations,
     loading: false,
     });
   },
@@ -108,6 +109,7 @@ const ACTION_HANDLERS = {
 const initialState = {
   username: '',
   most: [],
+  recommendations: [],
   loading: true,
   queuePosition: -1,
   queueSize: -1,
