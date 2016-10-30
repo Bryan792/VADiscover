@@ -135,7 +135,6 @@ async function updateUser(username) {
 
     let response = await Promise.all(
       _(sorted)
-        .slice(0, 5)
         .map((value) => {
           let actorInfo = actors[value[0]];
           let characters = _(actorInfo.character).uniqBy("id");
