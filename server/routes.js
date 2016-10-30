@@ -13,6 +13,7 @@ const Immutable = require('immutable');
 
 function initDb(database) {
   database.exists(createDbIfNeeded);
+
   function createDbIfNeeded(err, exists) {
     if (err) {
       console.log('error', err);
@@ -68,6 +69,7 @@ export function onIoConnect(io) {
 async function updateUser(username) {
   console.log("processing: " + username);
   await getApiValue("animelist/" + username).then(async function(person) {
+    let animeIdSet = Immutable.Set();
     var counter = {};
     var actors = {};
     await Promise.all(
@@ -76,6 +78,7 @@ async function updateUser(username) {
           return anime.watched_status === "completed" || anime.watched_status === "watching";
         })
         .map(async(anime) => {
+          animeIdSet = animeIdSet.add(anime.id);
           var addMe = anime.title + "\n";
           await getApiValue("anime/cast/" + anime.id).then((cast) => {
             addMe += "actors\n";
@@ -119,7 +122,7 @@ async function updateUser(username) {
               });
           }).catch(function(err) {
             console.log(err);
-          // API call failed... 
+          // API call failed...
           });
         }));
     let sorted = _(counter)
@@ -132,14 +135,37 @@ async function updateUser(username) {
         return _(actors[pair[0]].character).uniqBy("id").value().length;
       }])
       .reverse()
+      .value();
+
+    let recommendationsMap = Immutable.Map();
+    let maxCharactersPerActor = _(actors[sorted[0][0]].character).uniqBy("id").value().length;
 
     let response = await Promise.all(
       _(sorted)
-        .map((value) => {
+        .map((value, rank) => {
           let actorInfo = actors[value[0]];
           let characters = _(actorInfo.character).uniqBy("id");
           return getApiValue("people/" + actors[value[0]].actor.id)
             .then((person) => {
+              //Generate recommendations info
+              if (rank < 10) {
+              _(person.voice_acting_roles)
+                .filter({main_role: true})
+                .map((character) => ({
+                  id: character.anime.id,
+                  title: character.anime.title,
+                  image: character.anime.image_url,
+                }))
+                .filter((anime) => !animeIdSet.includes(anime.id))
+                .forEach((anime) => {
+                  if (!recommendationsMap.has(anime.id)) {
+                    recommendationsMap = recommendationsMap.set(anime.id, {...anime, actors: Immutable.Set()});
+                  }
+                  let animeInfo = recommendationsMap.get(anime.id);
+                  recommendationsMap = recommendationsMap.set(anime.id, {...animeInfo, actors: animeInfo.actors.add(value[0])});
+                });
+              }
+
               return {
                 actor: {
                   ..._(person).pick(["image_url", "name"]).value(),
@@ -153,11 +179,30 @@ async function updateUser(username) {
         })
     );
 
-    console.log(username);
+    //Post processing of recommendations info
+    let recommendationsArray = recommendationsMap
+      .filter((anime) => anime.actors.count() > 1)
+      .map((anime, animeId) => ({
+        animeId: anime.id,
+        title: anime.title,
+        image_url: anime.image,
+        actors: anime.actors,
+        //Arbitrary algorithm to generate a score for each anime based on VAs
+        score: anime.actors.reduce((total, actorId) => total + _(actors[actorId].character).uniqBy("id").value().length, 0) + anime.actors.count() * 0.5 * maxCharactersPerActor,
+      }))
+      .toList()
+      .sort((anime1, anime2) =>
+        anime2.score - anime1.score
+      )
+      .toJS();
+
     if (username === "unichanchan")
       return;
     responseDb.save(username, {
-      response: response,
+      response: {
+        voice_actors: response,
+        recommendations: recommendationsArray,
+      },
       last_updated: Date.now(),
     }, (err, res) => {
       console.log(res)
@@ -165,7 +210,7 @@ async function updateUser(username) {
 
   }).catch(function(err) {
     console.log(err);
-  // API call failed... 
+  // API call failed...
   });
 }
 
@@ -173,15 +218,14 @@ router.get('/mal/:id', async(ctx) => {
   let username = ctx.params.id.toLowerCase();
   if (!list.contains(username)) {
     console.log(username + " added to the queue");
-    queue.create("updateUser",
-      {
-        title: username
-      }).removeOnComplete(true).priority("high").save();
+    queue.create("updateUser", {
+      title: username
+    }).removeOnComplete(true).priority("high").save();
     list = list.push(username);
   }
 
   await getApiValue("profile/" + username)
-    .then(async (profile) => {
+    .then(async(profile) => {
 
       //If cached response
       await responseDb.getAsync(username)
@@ -192,7 +236,7 @@ router.get('/mal/:id', async(ctx) => {
             profile: profile,
           };
         })
-        .catch(async (err) => {
+        .catch(async(err) => {
           //NEW USER
 
           ctx.body = {
@@ -214,7 +258,7 @@ function getApiValue(apiPath) {
     //TODO: add rate limit
     var options = {
       uri: 'http://localhost:9001/2.1/' + apiPath,
-      json: true // Automatically parses the JSON string in the response 
+      json: true // Automatically parses the JSON string in the response
     };
     return await rp(options).then((jsonResponse) => {
         console.log("return from api");
