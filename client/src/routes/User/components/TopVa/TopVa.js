@@ -4,8 +4,8 @@ import VaCard from './VaCard';
 
 const TopVa = ({most}) => (
   <div>
-    <h3 className="ui header">Top VAs</h3>
-    <div className="ui segment">
+    <h3 className="ui top attached header">Top VAs</h3>
+    <div className="ui bottom attached segment">
       <div className="ui divided items">
         { most.slice(0, 5).map(actor => 
         <VaCard key={actor.actor.id} id={actor.actor.id} imageUrl={actor.actor.image_url} name={actor.actor.name} averageScore={actor.average_score} count={actor.count} character={actor.character} />

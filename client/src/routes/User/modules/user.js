@@ -41,6 +41,7 @@ export const requestVa = (username) => {
             socket.emit('username', username);
           });
           socket.on('message', (msg) => {
+            console.log(username + " " + msg);
             //TODO: another short circuit cancel here, maybe still race conditions with sockets
             if (username != getState().user.username) {
               socket.disconnect();

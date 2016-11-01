@@ -1,11 +1,5 @@
-import React, {
-  Component,
-  PropTypes
-} from 'react';
-import {
-  browserHistory,
-  Link
-} from 'react-router'
+import React, { Component, PropTypes} from 'react';
+import { browserHistory, Link} from 'react-router'
 
 import SearchBar from '../../../components/SearchBar'
 import Profile from './Profile'
@@ -24,29 +18,29 @@ export default class User extends Component {
   }
 
   componentDidUpdate(prevProps) {
-      // respond to parameter change in scenario 3
-      let oldId = prevProps.params.userId;
-      let newId = this.props.params.userId;
-      if (newId !== oldId)
-        this.props.requestVa(this.props.params.userId);
+    // respond to parameter change in scenario 3
+    let oldId = prevProps.params.userId;
+    let newId = this.props.params.userId;
+    if (newId !== oldId)
+      this.props.requestVa(this.props.params.userId);
   }
 
   render() {
     return (
       <div className="ui container">
-        <SearchBar history={this.props.history} />
-        <Profile username={this.props.username} profile={this.props.profile} />
-        <TopVa most={this.props.most} />
-        <Recommendations recommendations={this.props.recommendations} />
-        <Details most={this.props.most} />
-
-      { this.props.isLoading ?
-        <div className="ui active inverted dimmer">
-          <div className="ui text loader">
-            { this.props.queueSize > 0 ? "Position " + this.props.queuePosition + " of " + this.props.queueSize : "" } </div>
+        <SearchBar history={ this.props.history } />
+        <Profile username={ this.props.username } profile={ this.props.profile } />
+        <div style={{position: "relative"}}>
+          <TopVa most={ this.props.most } />
+          <div className="ui divider" />
+          <Recommendations recommendations={ this.props.recommendations } />
+          { this.props.isLoading ?
+            <div className="ui active inverted dimmer">
+              <div className="ui text loader">
+                { this.props.queueSize > 0 ? "Position " + this.props.queuePosition + " of " + this.props.queueSize : "" } </div>
+            </div>
+              : null }
         </div>
-        : null }
-
       </div>
     )
   }
