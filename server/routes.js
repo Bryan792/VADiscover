@@ -206,6 +206,7 @@ async function updateUser(username) {
       },
       last_updated: Date.now(),
     }, (err, res) => {
+      if (err) console.log(err);
       console.log(res)
     });
 
@@ -254,14 +255,16 @@ function getApiValue(apiPath) {
   return db.getAsync(apiPath).then((doc) => {
     //console.log("found");
     return doc;
-  }).catch(async(err) => {
+  }).catch((err) => {
     //THIS FEELS REALLY BAD
     //TODO: add rate limit
     var options = {
       uri: 'http://localhost:9001/2.1/' + apiPath,
       json: true // Automatically parses the JSON string in the response
     };
-    return await rp(options).then((jsonResponse) => {
+    //TODO: Build retry and rate limit
+    return rp(options)
+      .then((jsonResponse) => {
         console.log("return from api");
         db.save(apiPath, jsonResponse, (err, res) => {
           console.log(res)
