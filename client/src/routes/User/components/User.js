@@ -15,6 +15,9 @@ export default class User extends Component {
 
   componentDidMount() {
     this.props.requestVa(this.props.params.userId);
+    $('.menu .item')
+      .tab()
+    ;
   }
 
   componentDidUpdate(prevProps) {
@@ -31,15 +34,24 @@ export default class User extends Component {
         <SearchBar history={ this.props.history } />
         <Profile username={ this.props.username } profile={ this.props.profile } />
         <div style={{position: "relative"}}>
-          <TopVa most={ this.props.most } />
-          <div className="ui divider" />
-          <Recommendations recommendations={ this.props.recommendations } />
+          <div className="ui secondary menu">
+            <a className="item active" data-tab="first">Overview</a>
+            <a className="item" data-tab="second">Details</a>
+          </div>
+          <div className="ui bottom attached tab active" data-tab="first">
+            <TopVa most={ this.props.most } />
+            <div className="ui divider" />
+            <Recommendations recommendations={ this.props.recommendations } />
+          </div>
+          <div className="ui bottom attached tab" data-tab="second">
+            <Details most={ this.props.most } />
           { this.props.isLoading ?
             <div className="ui active inverted dimmer">
-              <div className="ui text loader">
+              <div className="ui big text loader">
                 { this.props.queueSize > 0 ? "Position " + this.props.queuePosition + " of " + this.props.queueSize : "" } </div>
             </div>
               : null }
+          </div>
         </div>
       </div>
     )

@@ -1,14 +1,15 @@
 import React from 'react';
+import styles from './DetailsRow.scss'
 
 const DetailsRow = ({id, shouldShowTooltip, imageUrl, name, character, maxCharacterLength}) => (
-  <div>
+  <div className={styles.blackOnHover}>
     <div className={ `title ${shouldShowTooltip ? "active" : ""}` } data-tooltip={shouldShowTooltip ? "Click me to Expand/Collapse" : null }>
       <div className="ui items">
         <div className="ui item">
           <a href={ "https://myanimelist.net/people/" + id } className="ui mini image"> <img src={ imageUrl } /> </a>
           <div className="content">
             <div className="header"> { name } </div>
-            <div className="ui progress">
+            <div className={`ui progress ${styles.noMargin}`}>
               <div className="bar" style={ { width: character.length * 100 / maxCharacterLength  + "%" } }>
                 <div className="progress">{ character.length } </div>
               </div>
