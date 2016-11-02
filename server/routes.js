@@ -35,8 +35,9 @@ let list = Immutable.List();
 export function onIoConnect(io) {
   io.on('connection', function(socket) {
     socket.on('username', function(msg) {
-      socket.join(msg);
-      let index = list.indexOf(msg);
+      let username = msg.toLowerCase();
+      socket.join(username);
+      let index = list.indexOf(username);
       if (index > -1) {
         socket.emit("message", "queueposition " + (index + 1) + " " + list.size);
       }
