@@ -133,12 +133,12 @@
     "enzyme": "^2.0.0",
     "esformatter": "^0.9.6",
     "esformatter-jsx": "^7.0.1",
-    "eslint": "^3.0.1",
-    "eslint-config-standard": "^6.0.0",
+    "eslint": "~3.9.1",
+    "eslint-config-standard": "latest",
     "eslint-config-standard-react": "^4.0.0",
     "eslint-plugin-babel": "^3.2.0",
-    "eslint-plugin-promise": "^2.0.0",
-    "eslint-plugin-react": "^6.0.0",
+    "eslint-plugin-promise": "latest",
+    "eslint-plugin-react": "~6.6.0",
     "eslint-plugin-standard": "^2.0.0",
     "isparta-loader": "^2.0.0",
     "karma": "^1.0.0",
@@ -155,6 +155,9 @@
     "sinon": "^1.17.5",
     "sinon-chai": "^2.8.0",
     "webpack-dev-middleware": "^1.6.1",
-    "webpack-hot-middleware": "^2.12.2"
+    "webpack-hot-middleware": "^2.12.2",
+    "eslint-config-airbnb": "~12.0.0",
+    "eslint-plugin-jsx-a11y": "~2.2.3",
+    "eslint-plugin-import": "~1.16.0"
   }
 }

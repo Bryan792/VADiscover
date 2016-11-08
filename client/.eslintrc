@@ -2,7 +2,8 @@
   "parser"  : "babel-eslint",
   "extends" : [
     "standard",
-    "standard-react"
+    "standard-react",
+    "airbnb"
   ],
   "plugins": [
     "babel",
@@ -17,25 +18,14 @@
     "__PROD__"     : false,
     "__DEBUG__"    : false,
     "__COVERAGE__" : false,
-    "__BASENAME__" : false,
-    $ : false
+    "__BASENAME__" : false
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true,
+      "experimentalObjectRestSpread": true
+    }
   },
   "rules": {
-    "key-spacing" : [2, {
-      "singleLine" : {
-        "beforeColon" : false,
-        "afterColon"  : true
-      },
-      "multiLine" : {
-        "align"       : "colon",
-        "beforeColon" : true,
-        "afterColon"  : true
-      }
-    }],
-    "babel/generator-star-spacing" : 1,
-    "generator-star-spacing"       : 0,
-    "jsx-quotes"                   : [2, "prefer-single"],
-    "max-len"                      : [2, 120, 2],
-    "object-curly-spacing"         : [2, "always"]
   }
 }
