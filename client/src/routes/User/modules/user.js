@@ -1,79 +1,88 @@
-import io from 'socket.io-client'
+import io from 'socket.io-client';
 
 // ------------------------------------
 // Constants
 // ------------------------------------
-export const REQUEST_VA = 'REQUEST_VA'
-export const RECEIVE_PROFILE = 'RECEIVE_PROFILE'
-export const RECEIVE_VA = 'RECEIVE_VA'
-export const QUEUE_UPDATE = 'QUEUE_UPDATE'
+export const REQUEST_VA = 'REQUEST_VA';
+export const RECEIVE_PROFILE = 'RECEIVE_PROFILE';
+export const RECEIVE_VA = 'RECEIVE_VA';
+export const QUEUE_UPDATE = 'QUEUE_UPDATE';
 
 // ------------------------------------
 // Actions
 // ------------------------------------
-let socket = null;
+let socket;
 
-export const requestVa = (username) => {
-  return function getData(dispatch, getState) {
-    //todo: Is this the best way?
+export const requestVa = username =>
+  function getData(dispatch, getState) {
+    // todo: Is this the best way?
     if (socket) socket.disconnect();
-    //fetch('https://yura.bryanching.net:8443/mal/' + getState().mal.username)
-    
+    // fetch('https://yura.bryanching.net:8443/mal/' + getState().mal.username)
+
     dispatch({
       type: REQUEST_VA,
-      username: username,
+      username,
     });
 
-    (function getDataR(username, dispatch, getState) {
-    fetch('https://yura.bryanching.net:8443/mal/' + username)
-      .then(data => data.json())
-      .then(text => {
-        //TODO: short circuit cancel here only works cause end of chain
-        if (username != getState().user.username) return; 
-        dispatch({
-          type: RECEIVE_PROFILE,
-          profile: text.profile,
+    (function getDataR(usernameR, dispatchR, getStateR) {
+      fetch(`https://yura.bryanching.net:8443/mal/${usernameR}`)
+        .then(data => data.json())
+        .then((text) => {
+          // TODO: short circuit cancel here only works cause end of chain
+          if (usernameR !== getStateR().user.username) return;
+          dispatchR({
+            type: RECEIVE_PROFILE,
+            profile: text.profile,
+          });
+          if (text.last_updated === 'never') {
+            // new user
+            socket = io('https://yura.bryanching.net:8443');
+            socket.on('connect', () => {
+              socket.emit('username', usernameR);
+            });
+            socket.on('message', (msg) => {
+              // TODO: another short circuit cancel here, maybe still race conditions with sockets
+              if (usernameR !== getStateR().user.username) {
+                socket.disconnect();
+                return;
+              }
+              if (msg === 'done') {
+                socket.disconnect();
+                // todo: RECURSION
+                getDataR(usernameR, dispatchR, getStateR);
+              } else if (msg.startsWith('queueposition')) {
+                const split = msg.split(' ');
+                dispatchR({
+                  type: QUEUE_UPDATE,
+                  position: parseInt(split[1], 10),
+                  total: parseInt(split[2], 10),
+                });
+              }
+            });
+          } else {
+            dispatchR({
+              type: RECEIVE_VA,
+              response: text.response,
+            });
+          }
         });
-        if (text.last_updated === "never") {
-          //new user
-          socket = io("https://yura.bryanching.net:8443");
-          socket.on('connect', () => {
-            socket.emit('username', username);
-          });
-          socket.on('message', (msg) => {
-            console.log(username + " " + msg);
-            //TODO: another short circuit cancel here, maybe still race conditions with sockets
-            if (username != getState().user.username) {
-              socket.disconnect();
-              return; 
-            }
-            if (msg === "done") {
-              socket.disconnect();
-              //todo: RECURSION
-              getDataR(username, dispatch, getState);
-            } else if (msg.startsWith("queueposition")) {
-              let split = msg.split(" ");
-              dispatch({
-                type: QUEUE_UPDATE,
-                position: parseInt(split[1]),
-                total: parseInt(split[2]),
-              });
-            }
-          });
-        } else {
-          dispatch({
-            type: RECEIVE_VA,
-            response: text.response,
-          })
-        }
-      });
-    })(username, dispatch, getState)
+    }(username, dispatch, getState));
   }
-}
+  ;
 
 export const actions = {
   requestVa,
-}
+};
+
+const initialState = {
+  username: '',
+  most: [],
+  recommendations: [],
+  loading: true,
+  queuePosition: -2,
+  queueSize: -1,
+  profile: {},
+};
 
 // ------------------------------------
 // Action Handlers
@@ -88,35 +97,25 @@ const ACTION_HANDLERS = {
     ...state,
     profile: action.profile,
   }),
-  [RECEIVE_VA]: (state, action) => {
-    return ({
+  [RECEIVE_VA]: (state, action) =>
+    ({
       ...state,
       most: action.response.voice_actors,
       recommendations: action.response.recommendations,
-    loading: false,
-    });
-  },
+      loading: false,
+    }),
   [QUEUE_UPDATE]: (state, action) => ({
     ...state,
     queuePosition: action.position,
     queueSize: action.total,
     loading: true,
   }),
-}
+};
 
 // ------------------------------------
 // Reducer
 // ------------------------------------
-const initialState = {
-  username: '',
-  most: [],
-  recommendations: [],
-  loading: true,
-  queuePosition: -1,
-  queueSize: -1,
-  profile: {},
-};
 export default function reducer(state = initialState, action) {
-  const handler = ACTION_HANDLERS[action.type]
-  return handler ? handler(state, action) : state
+  const handler = ACTION_HANDLERS[action.type];
+  return handler ? handler(state, action) : state;
 }
